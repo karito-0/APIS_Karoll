@@ -1,5 +1,17 @@
 {
-  "name": "apis-karoll",
+  "name": "promesas",
   "version": "1.0.0",
-  "type": "module"
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test",
+    "lint": "eslint . && prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  }
 }
