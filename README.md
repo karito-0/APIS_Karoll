@@ -1,60 +1,89 @@
-# APIS_Karoll
+# PROMESAS
 
-Encadenamiento de promesas con async/await usando JSONPlaceholder.
-Obtiene un usuario con sus posts (y comentarios), álbumes (y fotos) y todos.
+Aplicación Node.js que consulta JSONPlaceholder y construye la relación usuario → publicaciones → comentarios.
 
-## Ejecutar (Node.js 18+)
+## Requisitos
 
-```bash
-node main.js
+- Node.js 20 o superior.
+- npm.
+
+## Instalación y ejecución
+
+```sh
+npm ci
+npm start
 ```
 
-## Prompt utilizado
+Al iniciar, la terminal solicita un ID de usuario entre `1` y `10`. Al terminar las consultas, muestra los objetos JavaScript con colores y los agrupa con títulos jerárquicos:
 
 ```text
-ACCESO A GITHUB (completar antes de enviar el prompt)
-USUARIO: <escribe aquí tu usuario de GitHub>
-TOKEN: <pega aquí tu token personal de GitHub>
-REPOSITORIO: <pega aquí la URL del repositorio, terminada en .git>
+# Usuario
+{ usuario: 'Leanne Graham' }
 
-ROL
-Actúa como un ingeniero de software experto en JavaScript, con dominio de
-ES Modules, programación asíncrona y consumo de APIs REST.
- 
-TAREA
-Desarrolla un ejemplo de encadenamiento de promesas con async/await
-que obtenga un usuario y toda su información relacionada, y la muestre en un
-único console.log como un objeto JSON completo.
- 
-CONTEXTO
-- Estamos practicando encadenamiento de promesas en JavaScript.
-- Usamos la API https://jsonplaceholder.typicode.com/
-- El proyecto usa un archivo barril (index.js) que reexporta las funciones
-  de los servicios (users, posts, comments, photos).
-- En esta API los comentarios NO tienen userId: pertenecen a un post
-  (postId). La relación correcta es usuario → posts → comentarios.
-- El usuario también tiene álbumes (con fotos) y tareas (todos).
- 
-FORMATO DE RESPUESTA
-1. Estructura de carpetas del proyecto.
-2. Código de cada archivo, en bloques separados y con su ruta:
-   http.js, users.js, posts.js, comments.js, photos.js, index.js (barril)
-   y main.js.
-3. Un único console.log final con JSON.stringify(resultado, null, 2)
-   (o console.dir con depth: null) que muestre:
-   { user, posts: [ { ...post, comments: [...] } ], albums: [...], todos: [...] }
-4. Ejemplo resumido de la salida esperada.
-5. Instrucciones para ejecutarlo (type: "module" y comando node).
-6. Usa async/await.
- 
- 
-RESTRICCIONES
-- Usa únicamente JavaScript (ES Modules). No uses ni menciones Java ni PHP.
-- No inventes endpoints, propiedades ni datos: usa solo los que existen en
-  JSONPlaceholder. Si algo no existe, dilo.
-- No alucines: si tienes dudas, pregunta antes de asumir.
-- Sigue estas instrucciones al pie de la letra.
-- Responde en español, con comentarios breves en el código.
+# Publicaciones (1)
+
+## Publicación 1
+{ id: 1, title: '...', body: '...' }
+
+### Comentarios (1)
+
+#### Comentario 1
+{ postId: 1, id: 1, name: '...', email: '...', body: '...' }
 ```
 
-> No escribas tu token real en este archivo: déjalo como campo vacío y compártelo solo en el chat.
+Los valores se muestran coloreados en la terminal; los puntos suspensivos abrevian el ejemplo.
+
+## Estructura del proyecto
+
+```text
+.
+├── src/
+│   ├── app.js
+│   ├── main.js
+│   ├── index.js
+│   ├── core/
+│   │   └── http.js
+│   └── feature/
+│       ├── usuario/
+│       ├── post/
+│       └── comentarios/
+├── test/
+├── especificaciones/
+├── .github/workflows/
+├── arquitectura.md
+└── reglas-de-negocio.md
+```
+
+## Flujo
+
+```mermaid
+flowchart TD
+    A[src/main.js] --> B[construirResultado en src/app.js]
+    B --> C[Solicitar ID 1-10]
+    C --> D[getUser: /users/{id}]
+    D --> E[getPostsByUser: /posts?userId={id}]
+    E --> F[getCommentsByPost: /comments?postId=ID real]
+    F --> G[Armar { usuario, posts }]
+    G --> H[Objetos coloreados y agrupados por títulos]
+    D -. HTTP compartido .-> I[src/core/http.js]
+    E -. HTTP compartido .-> I
+    F -. HTTP compartido .-> I
+```
+
+## Decisiones de diseño
+
+- El código de aplicación vive en `src/`; `src/app.js` construye y devuelve el resultado, `src/terminal-output.js` organiza los objetos coloreados con títulos y `src/main.js` controla el arranque y la única salida en terminal.
+- Se mantiene la arquitectura por funcionalidad (`src/feature/`) y el cliente HTTP compartido (`src/core/`).
+- Los endpoints se limitan a `/users/{id}` y `/posts?userId={id}` para IDs entre 1 y 10, y `/comments?postId=X` con el ID real de cada publicación.
+- Los comentarios se consultan en paralelo y se buscan usando el `id` real de cada publicación.
+- El cliente HTTP usa `AbortSignal.timeout` y conserva las causas al distinguir fallos de red, timeout y respuestas HTTP no exitosas.
+- No hay dependencias de ejecución. Las dependencias de desarrollo cubren ESLint y Prettier.
+
+## Calidad
+
+```sh
+npm test
+npm run lint
+```
+
+Las pruebas usan `node:test` y sustituyen `fetch`; no dependen de la red.
